@@ -35,3 +35,28 @@ Runtime branding such as `NullUI` or `VVind` may be replaced by `BobloNEXT` as t
 As of the initial BobloNEXT repository setup, the public VVind-UI repository does not expose a license file or GitHub-recognized license. BobloNEXT therefore does not make a blanket relicensing claim over VVind-specific additions.
 
 The MIT license included in `LICENSE-WINDUI` applies to WindUI-originated material under the terms stated there.
+
+
+## Embedded icon lookup tables
+
+BobloNEXT embeds its icon name -> Roblox asset ID lookup tables directly into `src.lua` so the UI does not fetch those tables from another repository at runtime.
+
+The exact tables were taken from the runtime asset mirror previously used by Vind Ui Reborn:
+
+- **NullUI-Assets** — Skinny-yz  
+  https://github.com/Skinny-yz/NullUI-Assets
+
+That repository states that the icon lookup tables were mirrored from:
+
+- **Nebula-Softworks/Nebula-Icon-Library**  
+  https://github.com/Nebula-Softworks/Nebula-Icon-Library
+
+The Nebula icon-library repository declares **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. A copy is included as `LICENSE-NEBULA-ICONS`.
+
+The tables contain icon names and Roblox asset IDs only. BobloNEXT does not contain the underlying icon image binaries; the referenced images remain hosted by Roblox under their asset IDs.
+
+## Runtime dependency policy
+
+BobloNEXT must not hardcode runtime downloads from VVind, NullUI-Assets, WindUI, or other upstream repositories.
+
+Optional user-configured network features (for example a webhook URL, CloudService backend, AI provider endpoint, or Spotify artwork URL supplied by a configured bridge) are features, not hidden upstream dependencies.
