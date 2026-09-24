@@ -31,12 +31,24 @@ local Colors = {
 }
 
 -- Apply the palette before creating the window.
-BobloNEXT.Theme.Background = Colors.Background
-BobloNEXT.Theme.Surface = Colors.Surface
-BobloNEXT.Theme.Text = Colors.White
-BobloNEXT.Theme.TextDim = Colors.TextMuted
-BobloNEXT.Theme.Accent = Colors.Purple
-BobloNEXT.Theme.Danger = Colors.Neutral
+BobloNEXT:SetTheme({
+    Background  = Colors.Background,
+    Surface     = Colors.Surface,
+    SurfaceHigh = Colors.SurfaceHigh,
+    Border      = Colors.SurfaceHigh,
+
+    Text         = Colors.White,
+    TextDim      = Colors.TextMuted,
+    TextSoft     = Colors.TextSoft,
+    Neutral      = Colors.Neutral,
+
+    Accent       = Colors.Purple,
+    AccentSoft   = Colors.PurpleSoft,
+    OnAccent     = Colors.Background,
+
+    Success      = Colors.Green,
+    SuccessSoft  = Colors.GreenSoft,
+})
 
 local Window = BobloNEXT:CreateWindow({
     Title = "Example-Color",
