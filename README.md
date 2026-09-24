@@ -54,6 +54,10 @@ Optional features can still make network requests **only when you configure/use 
 
 The embedded icon tables map names to Roblox asset IDs. The actual icon images are still Roblox-hosted assets; they are not bundled as image files inside BobloNEXT.
 
+## AI / LLM development instructions
+
+Before modifying BobloNEXT with an AI coding agent, read [AGENTS.md](AGENTS.md). It documents the current architecture, compatibility rules, theme system, executor constraints, testing checklist, and upstream-attribution requirements.
+
 ## Development direction
 
 For now we are **not** spending time deleting working VVind features just to make the code smaller.
