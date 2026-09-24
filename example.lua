@@ -567,7 +567,7 @@ local PrimaryColor = Customization:AddColorPicker({
 	Icon        = "Phosphor:palette",
 	Flag        = "primaryColor",
 	Default     = Color3.fromRGB(255, 90, 90),
-	Callback    = function(color) print("Primary Color:", color) end,
+	Callback    = function(color) BobloNEXT:SetTheme({ Accent = color }) end,
 })
 
 local SecondaryColor = Customization:AddColorPicker({
@@ -576,7 +576,7 @@ local SecondaryColor = Customization:AddColorPicker({
 	Icon        = "Phosphor:swatches",
 	Flag        = "secondaryColor",
 	Default     = Color3.fromRGB(90, 90, 255),
-	Callback    = function(color) print("Secondary Color:", color) end,
+	Callback    = function(color) BobloNEXT:SetTheme({ AccentSoft = color }) end,
 })
 
 Customization:AddDivider()
