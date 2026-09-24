@@ -7,8 +7,9 @@
 -- #4ade80 - #6ee7b7
 -- #1a1a24 - #252530
 
+local SOURCE_URL = "https://raw.githubusercontent.com/bobloscript/BobloNEXT/main/src.lua"
 local BobloNEXT = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/bobloscript/BobloNEXT/main/src.lua"
+    SOURCE_URL .. "?cache=" .. tostring(os.clock())
 ))()
 
 local Colors = {
