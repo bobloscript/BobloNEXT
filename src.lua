@@ -456,23 +456,93 @@ local Fonts = LoadFonts()
 BobloNEXT.Theme = {
 	Background     = Color3.fromRGB(16, 16, 16),
 	Surface        = Color3.fromRGB(24, 24, 24),
+	SurfaceHigh    = Color3.fromRGB(37, 37, 48),
+	Border         = Color3.fromRGB(62, 62, 74),
+
 	Text           = Color3.fromRGB(240, 240, 240),
 	TextDim        = Color3.fromRGB(150, 150, 155),
+	TextSoft       = Color3.fromRGB(170, 170, 178),
+	Neutral        = Color3.fromRGB(160, 160, 175),
+
 	Accent         = Color3.fromRGB(255, 255, 255),
+	AccentSoft     = Color3.fromRGB(205, 205, 210),
+	OnAccent       = Color3.fromRGB(18, 18, 18),
+
+	Success        = Color3.fromRGB(74, 222, 128),
+	SuccessSoft    = Color3.fromRGB(110, 231, 183),
 	Danger         = Color3.fromRGB(205, 205, 210),
- 
+
 	Font           = Fonts.SemiBold,
 	FontRegular    = Fonts.Regular,
- 
 	MeasureFont    = Enum.Font.GothamSemibold,
- 
+
 	CornerRadius   = 16,
 	CornerRadiusSm = 8,
 	Margin         = 14,
 	AnimFast       = 0.15,
 	AnimSlow       = 0.32,
 }
- 
+
+-- Theme bindings keep controls synchronized when SetTheme() is called at runtime.
+local ThemeBindings = setmetatable({}, { __mode = "k" })
+
+local function ResolveThemeBinding(binding)
+	if type(binding) == "function" then
+		return binding(BobloNEXT.Theme)
+	end
+	return BobloNEXT.Theme[binding]
+end
+
+local function ThemeBind(instance, property, binding)
+	if not instance then return instance end
+	local props = ThemeBindings[instance]
+	if not props then
+		props = {}
+		ThemeBindings[instance] = props
+	end
+	props[property] = binding
+
+	local value = ResolveThemeBinding(binding)
+	if value ~= nil then
+		pcall(function() instance[property] = value end)
+	end
+	return instance
+end
+
+function BobloNEXT:SetTheme(values)
+	if type(values) ~= "table" then return self.Theme end
+
+	if values.Primary ~= nil and values.Accent == nil then
+		values.Accent = values.Primary
+	end
+	if values.Secondary ~= nil and values.AccentSoft == nil then
+		values.AccentSoft = values.Secondary
+	end
+
+	for key, value in pairs(values) do
+		if self.Theme[key] ~= nil then
+			self.Theme[key] = value
+		end
+	end
+
+	for instance, props in pairs(ThemeBindings) do
+		local alive = false
+		pcall(function() alive = instance.Parent ~= nil end)
+		if alive then
+			for property, binding in pairs(props) do
+				local value = ResolveThemeBinding(binding)
+				if value ~= nil then
+					pcall(function() instance[property] = value end)
+				end
+			end
+		else
+			ThemeBindings[instance] = nil
+		end
+	end
+
+	return self.Theme
+end
+
 local Z = {
 	Glass    = 0,
 	Window   = 1,
@@ -520,11 +590,12 @@ local function GlassLayer(parent, radius, transparency)
 	local glass = Instance.new("Frame")
 	glass.Name = "Glass"
 	glass.Size = UDim2.fromScale(1, 1)
-	glass.BackgroundColor3 = Color3.new(1, 1, 1)
+	glass.BackgroundColor3 = BobloNEXT.Theme.SurfaceHigh
 	glass.BackgroundTransparency = transparency or 0.985
 	glass.BorderSizePixel = 0
 	glass.ZIndex = Z.Glass
 	glass.Parent = parent
+	ThemeBind(glass, "BackgroundColor3", "SurfaceHigh")
 	Corner(glass, radius)
 	return glass
 end
@@ -539,7 +610,7 @@ end
 local function AddContentScrollThumb(scroll, listLayout, thumbParent, janitor)
 	local thumb = Instance.new("Frame")
 	thumb.Name = "ContentScrollThumb"
-	thumb.BackgroundColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(thumb, "BackgroundColor3", "TextDim")
 	thumb.BackgroundTransparency = 0.35
 	thumb.BorderSizePixel = 0
 	thumb.AnchorPoint = Vector2.new(1, 0)
@@ -11090,14 +11161,16 @@ local DRAG_THRESHOLD = 6
  
 local function BaseCard(parent, height)
 	local card = Instance.new("Frame")
-	card.BackgroundColor3 = Color3.new(1, 1, 1)
-	card.BackgroundTransparency = 0.96
+	card.BackgroundColor3 = BobloNEXT.Theme.SurfaceHigh
+	card.BackgroundTransparency = 0.12
 	card.BorderSizePixel = 0
 	card.Size = UDim2.new(1, 0, 0, height or 44)
 	card.ZIndex = Z.Content
 	card.Parent = parent
+	ThemeBind(card, "BackgroundColor3", "SurfaceHigh")
 	Corner(card, BobloNEXT.Theme.CornerRadiusSm)
-	Stroke(card, Color3.new(1, 1, 1), 1, 0.95)
+	local cardStroke = Stroke(card, BobloNEXT.Theme.Border, 1, 0.55)
+	ThemeBind(cardStroke, "Color", "Border")
 	return card
 end
  
@@ -11109,7 +11182,7 @@ local function AddLeadingIcon(card, icon, height)
 	img.Name = "LeadingIcon"
 	img.BackgroundTransparency = 1
 	img.Image = asset
-	img.ImageColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(img, "ImageColor3", "TextDim")
 	img.Size = UDim2.fromOffset(16, 16)
 	img.AnchorPoint = Vector2.new(0, 0.5)
 	img.Position = UDim2.new(0, 14, 0.5, 0)
@@ -11128,7 +11201,7 @@ local function AddTitleDesc(card, x, rightReserve, title, description, baseHeigh
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.FontFace = BobloNEXT.Theme.Font
 	titleLabel.Text = title
-	titleLabel.TextColor3 = BobloNEXT.Theme.Text
+	ThemeBind(titleLabel, "TextColor3", "Text")
 	titleLabel.TextSize = 14
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
@@ -11145,7 +11218,7 @@ local function AddTitleDesc(card, x, rightReserve, title, description, baseHeigh
 		descLabel.BackgroundTransparency = 1
 		descLabel.FontFace = BobloNEXT.Theme.FontRegular
 		descLabel.Text = description
-		descLabel.TextColor3 = BobloNEXT.Theme.TextDim
+		ThemeBind(descLabel, "TextColor3", "TextDim")
 		descLabel.TextSize = 12
 		descLabel.TextWrapped = true
 		descLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -11277,14 +11350,15 @@ function BobloNEXT:CreateWindow(opts)
 	main.AnchorPoint = Vector2.new(0.5, 0.5)
 	main.Position = UDim2.fromScale(0.5, IsMobileDevice and 0.5 or 0.55)
 	main.Size = size
-	main.BackgroundColor3 = BobloNEXT.Theme.Background
+	ThemeBind(main, "BackgroundColor3", "Background")
 	main.BackgroundTransparency = 1
 	main.BorderSizePixel = 0
 	main.ClipsDescendants = true
 	main.ZIndex = Z.Window
 	main.Parent = root
 	Corner(main, BobloNEXT.Theme.CornerRadius)
-	Stroke(main, Color3.new(1, 1, 1), 1, 0.92)
+	local mainStroke = Stroke(main, BobloNEXT.Theme.Border, 1, 0.55)
+	ThemeBind(mainStroke, "Color", "Border")
 	GlassLayer(main, BobloNEXT.Theme.CornerRadius, 0.985)
  
 	local topbar = Instance.new("Frame")
@@ -11316,7 +11390,8 @@ function BobloNEXT:CreateWindow(opts)
 		btn.Name = name
 		btn.Text = ""
 		btn.AutoButtonColor = false
-		btn.BackgroundColor3 = Color3.new(1, 1, 1)
+		btn.BackgroundColor3 = BobloNEXT.Theme.SurfaceHigh
+		ThemeBind(btn, "BackgroundColor3", "SurfaceHigh")
 		btn.BackgroundTransparency = 1
 		btn.BorderSizePixel = 0
 		btn.Size = UDim2.fromOffset(26, 26)
@@ -11328,7 +11403,7 @@ function BobloNEXT:CreateWindow(opts)
 		local ic = Instance.new("ImageLabel")
 		ic.BackgroundTransparency = 1
 		ic.Image = ResolveIcon(icon)
-		ic.ImageColor3 = BobloNEXT.Theme.TextDim
+		ThemeBind(ic, "ImageColor3", "TextDim")
 		ic.Size = UDim2.fromOffset(14, 14)
 		ic.AnchorPoint = Vector2.new(0.5, 0.5)
 		ic.Position = UDim2.fromScale(0.5, 0.5)
@@ -11360,7 +11435,7 @@ function BobloNEXT:CreateWindow(opts)
 		windowIcon.Name = "WindowIcon"
 		windowIcon.BackgroundTransparency = 1
 		windowIcon.Image = ResolveIcon(opts.Icon)
-		windowIcon.ImageColor3 = BobloNEXT.Theme.Text
+		ThemeBind(windowIcon, "ImageColor3", "Text")
 		windowIcon.Size = UDim2.fromOffset(20, 20)
 		windowIcon.AnchorPoint = Vector2.new(0, 0.5)
 		windowIcon.Position = UDim2.new(0, titleStartX, 0.5, 0)
@@ -11374,7 +11449,7 @@ function BobloNEXT:CreateWindow(opts)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.FontFace = BobloNEXT.Theme.Font
 	titleLabel.Text = opts.Title or "Window"
-	titleLabel.TextColor3 = BobloNEXT.Theme.Text
+	ThemeBind(titleLabel, "TextColor3", "Text")
 	titleLabel.TextSize = 16
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
@@ -11391,7 +11466,7 @@ function BobloNEXT:CreateWindow(opts)
 		subLabel.BackgroundTransparency = 1
 		subLabel.FontFace = BobloNEXT.Theme.FontRegular
 		subLabel.Text = opts.Subtitle
-		subLabel.TextColor3 = BobloNEXT.Theme.TextDim
+		ThemeBind(subLabel, "TextColor3", "TextDim")
 		subLabel.TextSize = 13
 		subLabel.TextXAlignment = Enum.TextXAlignment.Left
 		subLabel.TextYAlignment = Enum.TextYAlignment.Center
@@ -11433,7 +11508,7 @@ function BobloNEXT:CreateWindow(opts)
  
 	local tabIndicator = Instance.new("Frame")
 	tabIndicator.Name = "Indicator"
-	tabIndicator.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(tabIndicator, "BackgroundColor3", "Accent")
 	tabIndicator.BackgroundTransparency = 1
 	tabIndicator.BorderSizePixel = 0
 	tabIndicator.ZIndex = Z.Window
@@ -11444,7 +11519,7 @@ function BobloNEXT:CreateWindow(opts)
  
 	local divider = Instance.new("Frame")
 	divider.Name = "Divider"
-	divider.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(divider, "BackgroundColor3", "Border")
 	divider.BackgroundTransparency = 0.94
 	divider.BorderSizePixel = 0
 	divider.Position = UDim2.new(0, margin + 144, 0, 58)
@@ -11466,7 +11541,7 @@ function BobloNEXT:CreateWindow(opts)
 	resizeHandle.BackgroundTransparency = 1
 	resizeHandle.AutoButtonColor = false
 	resizeHandle.Image = "rbxassetid://120997033468887"
-	resizeHandle.ImageColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(resizeHandle, "ImageColor3", "TextDim")
 	resizeHandle.ImageTransparency = 0.35
 	resizeHandle.AnchorPoint = Vector2.new(1, 1)
 	resizeHandle.Position = UDim2.new(1, -4, 1, -4)
@@ -15679,7 +15754,7 @@ function Window:AddTab(nameOrOpts)
 	tabButton.Name = name
 	tabButton.Text = ""
 	tabButton.AutoButtonColor = false
-	tabButton.BackgroundColor3 = Color3.new(1, 1, 1)
+	tabButton.BackgroundColor3 = BobloNEXT.Theme.Accent
 	tabButton.BackgroundTransparency = 1
 	tabButton.BorderSizePixel = 0
 	tabButton.Size = UDim2.new(1, 0, 0, 34)
@@ -15828,6 +15903,16 @@ function Window:AddTab(nameOrOpts)
 		_password = opts.Password,
 	}, Tab)
  
+	ThemeBind(tabButton, "BackgroundColor3", "Accent")
+	ThemeBind(textLabel, "TextColor3", function(theme)
+		return self._currentTab == tabObj and theme.Text or theme.TextDim
+	end)
+	if iconLabel then
+		ThemeBind(iconLabel, "ImageColor3", function(theme)
+			return self._currentTab == tabObj and theme.Text or theme.TextDim
+		end)
+	end
+
 	local myIndex = #self._tabs + 1
  
 	local function indicatorY()
@@ -17141,7 +17226,7 @@ function Tab:AddSection(textOrOpts, maybeIcon)
 		local img = Instance.new("ImageLabel")
 		img.BackgroundTransparency = 1
 		img.Image = iconAsset
-		img.ImageColor3 = BobloNEXT.Theme.TextDim
+		ThemeBind(img, "ImageColor3", "TextDim")
 		img.Size = UDim2.fromOffset(13, 13)
 		img.Position = UDim2.fromOffset(2, 8)
 		img.ZIndex = Z.Content + 1
@@ -17153,7 +17238,7 @@ function Tab:AddSection(textOrOpts, maybeIcon)
 	label.BackgroundTransparency = 1
 	label.FontFace = BobloNEXT.Theme.Font
 	label.Text = string.upper(text)
-	label.TextColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(label, "TextColor3", "TextDim")
 	label.TextSize = 12
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextTruncate = Enum.TextTruncate.AtEnd
@@ -17181,7 +17266,7 @@ function Tab:AddDivider()
 	line.AnchorPoint = Vector2.new(0, 0.5)
 	line.Position = UDim2.new(0, 0, 0.5, 0)
 	line.Size = UDim2.new(1, 0, 0, 1)
-	line.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(line, "BackgroundColor3", "Border")
 	line.BackgroundTransparency = 0.92
 	line.BorderSizePixel = 0
 	line.ZIndex = Z.Content
@@ -19134,7 +19219,7 @@ function Tab:AddToggle(opts)
 	switchBg.AnchorPoint = Vector2.new(1, 0.5)
 	switchBg.Position = UDim2.new(1, -14, 0.5, 0)
 	switchBg.Size = UDim2.fromOffset(40, 22)
-	switchBg.BackgroundColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(46, 50, 49)
+	switchBg.BackgroundColor3 = state and BobloNEXT.Theme.Accent or BobloNEXT.Theme.SurfaceHigh
 	switchBg.BackgroundTransparency = state and 0 or 0.32
 	switchBg.BorderSizePixel = 0
 	switchBg.ZIndex = Z.Content + 1
@@ -19145,7 +19230,7 @@ function Tab:AddToggle(opts)
 	-- through the control instead of turning into a flat gray pill.
 	local switchStroke = Stroke(
 		switchBg,
-		state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 212, 209),
+		state and BobloNEXT.Theme.AccentSoft or BobloNEXT.Theme.Neutral,
 		1,
 		state and 0.88 or 0.72
 	)
@@ -19153,8 +19238,8 @@ function Tab:AddToggle(opts)
 	local switchGradient = Instance.new("UIGradient")
 	switchGradient.Rotation = 90
 	switchGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 198, 194)),
+		ColorSequenceKeypoint.new(0, BobloNEXT.Theme.AccentSoft),
+		ColorSequenceKeypoint.new(1, BobloNEXT.Theme.Accent),
 	})
 	switchGradient.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, state and 0 or 0.76),
@@ -19170,13 +19255,29 @@ function Tab:AddToggle(opts)
 	knob.Size = UDim2.fromOffset(16, 16)
 	knob.Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
 	knob.AnchorPoint = Vector2.new(0, 0.5)
-	knob.BackgroundColor3 = state and Color3.fromRGB(18, 18, 18) or Color3.fromRGB(226, 230, 228)
+	knob.BackgroundColor3 = state and BobloNEXT.Theme.OnAccent or BobloNEXT.Theme.TextSoft
 	knob.BackgroundTransparency = state and 0 or 0.06
 	knob.BorderSizePixel = 0
 	knob.ZIndex = Z.Content + 2
 	knob.Parent = switchBg
 	Corner(knob, 8)
  
+	ThemeBind(switchBg, "BackgroundColor3", function(theme)
+		return state and theme.Accent or theme.SurfaceHigh
+	end)
+	ThemeBind(switchStroke, "Color", function(theme)
+		return state and theme.AccentSoft or theme.Neutral
+	end)
+	ThemeBind(switchGradient, "Color", function(theme)
+		return ColorSequence.new({
+			ColorSequenceKeypoint.new(0, theme.AccentSoft),
+			ColorSequenceKeypoint.new(1, theme.Accent),
+		})
+	end)
+	ThemeBind(knob, "BackgroundColor3", function(theme)
+		return state and theme.OnAccent or theme.TextSoft
+	end)
+
 	local click = Instance.new("TextButton")
 	click.Text = ""
 	click.AutoButtonColor = false
@@ -19189,11 +19290,11 @@ function Tab:AddToggle(opts)
 		local anim = 0.28
 		local style, dir = Enum.EasingStyle.Quint, Enum.EasingDirection.InOut
 		Tween(switchBg, {
-			BackgroundColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(46, 50, 49),
+			BackgroundColor3 = state and BobloNEXT.Theme.Accent or BobloNEXT.Theme.SurfaceHigh,
 			BackgroundTransparency = state and 0 or 0.32,
 		}, anim, style, dir)
 		Tween(switchStroke, {
-			Color = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 212, 209),
+			Color = state and BobloNEXT.Theme.AccentSoft or BobloNEXT.Theme.Neutral,
 			Transparency = state and 0.88 or 0.72,
 		}, anim, style, dir)
 		switchGradient.Transparency = NumberSequence.new({
@@ -19201,7 +19302,7 @@ function Tab:AddToggle(opts)
 			NumberSequenceKeypoint.new(1, state and 0 or 0.94),
 		})
 		Tween(knob, {
-			BackgroundColor3 = state and Color3.fromRGB(18, 18, 18) or Color3.fromRGB(226, 230, 228),
+			BackgroundColor3 = state and BobloNEXT.Theme.OnAccent or BobloNEXT.Theme.TextSoft,
 			BackgroundTransparency = state and 0 or 0.06,
 			Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
 		}, anim, style, dir)
@@ -19332,7 +19433,7 @@ function Tab:AddSlider(opts)
 	track.Size = UDim2.new(1, -28, 0, 6)
 	-- Nearly transparent white overlay: no gray tint, so the window background
 	-- remains visible through the unfilled portion of the slider.
-	track.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(track, "BackgroundColor3", "SurfaceHigh")
 	track.BackgroundTransparency = 0.91
 	track.BorderSizePixel = 0
 	track.ZIndex = Z.Content + 1
@@ -19340,7 +19441,7 @@ function Tab:AddSlider(opts)
 	Corner(track, 3)
  
 	local fill = Instance.new("Frame")
-	fill.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(fill, "BackgroundColor3", "Accent")
 	fill.BackgroundTransparency = 0
 	fill.BorderSizePixel = 0
 	fill.Size = UDim2.new(SafeAlpha(value, min, max), 0, 1, 0)
@@ -19352,13 +19453,14 @@ function Tab:AddSlider(opts)
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new(SafeAlpha(value, min, max), 0, 0.5, 0)
 	knob.Size = UDim2.fromOffset(12, 12)
-	knob.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(knob, "BackgroundColor3", "AccentSoft")
 	knob.BackgroundTransparency = 0
 	knob.BorderSizePixel = 0
 	knob.ZIndex = Z.Content + 3
 	knob.Parent = track
 	Corner(knob, 6)
-	Stroke(knob, Color3.fromRGB(16, 16, 16), 2, 0)
+	local knobStroke = Stroke(knob, BobloNEXT.Theme.Background, 2, 0)
+	ThemeBind(knobStroke, "Color", "Background")
  
 	if hasDesc then
 		local lastW = -1
@@ -19593,7 +19695,7 @@ function Tab:AddDropdown(opts)
 	valueLabel.BackgroundTransparency = 1
 	valueLabel.FontFace = BobloNEXT.Theme.FontRegular
 	valueLabel.Text = formatValue()
-	valueLabel.TextColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(valueLabel, "TextColor3", "TextDim")
 	valueLabel.TextSize = 13
 	valueLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -19606,7 +19708,7 @@ function Tab:AddDropdown(opts)
 	local chevron = Instance.new("ImageLabel")
 	chevron.BackgroundTransparency = 1
 	chevron.Image = ResolveIcon("chevron-down")
-	chevron.ImageColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(chevron, "ImageColor3", "TextDim")
 	chevron.Size = UDim2.fromOffset(14, 14)
 	chevron.AnchorPoint = Vector2.new(1, 0.5)
 	chevron.Position = UDim2.new(1, -14, 0.5, 0)
@@ -19686,14 +19788,15 @@ function Tab:AddDropdown(opts)
 		popupFrame = Instance.new("CanvasGroup")
 		popupFrame.Name = "DropdownPopup"
 		popupFrame.Active = true
-		popupFrame.BackgroundColor3 = BobloNEXT.Theme.Background
+		ThemeBind(popupFrame, "BackgroundColor3", "Background")
 		popupFrame.BackgroundTransparency = 1
 		popupFrame.BorderSizePixel = 0
 		popupFrame.ZIndex = Z.Popup
 		popupFrame.Size = UDim2.new(0, popupW, 0, 0)
 		popupFrame.Parent = root
 		Corner(popupFrame, 10)
-		local popupStroke = Stroke(popupFrame, Color3.new(1, 1, 1), 1, 0.92)
+		local popupStroke = Stroke(popupFrame, BobloNEXT.Theme.Border, 1, 0.72)
+		ThemeBind(popupStroke, "Color", "Border")
 		GlassLayer(popupFrame, 10, 0.985)
  
 		local px, py = ComputePopupPosition(mainWindow, card, popupW, targetHeight)
@@ -19732,7 +19835,7 @@ function Tab:AddDropdown(opts)
 			local optBtn = Instance.new("TextButton")
 			optBtn.Text = ""
 			optBtn.AutoButtonColor = false
-			optBtn.BackgroundColor3 = Color3.new(1, 1, 1)
+			optBtn.BackgroundColor3 = BobloNEXT.Theme.Accent
 			optBtn.BackgroundTransparency = isOptionSelected(optionName) and 0.9 or 1
 			optBtn.BorderSizePixel = 0
 			optBtn.Size = UDim2.new(1, 0, 0, rowH)
@@ -19762,19 +19865,20 @@ function Tab:AddDropdown(opts)
 				check.AnchorPoint = Vector2.new(1, 0.5)
 				check.Position = UDim2.new(1, -10, 0.5, 0)
 				check.Size = UDim2.fromOffset(14, 14)
-				check.BackgroundColor3 = Color3.new(1, 1, 1)
+				check.BackgroundColor3 = BobloNEXT.Theme.Accent
 				check.BackgroundTransparency = isOptionSelected(optionName) and 0.05 or 0.9
 				check.BorderSizePixel = 0
 				check.ZIndex = Z.Popup + 3
 				check.Parent = optBtn
 				Corner(check, 4)
-				Stroke(check, Color3.new(1, 1, 1), 1, 0.75)
+				local checkStroke = Stroke(check, BobloNEXT.Theme.AccentSoft, 1, 0.55)
+				ThemeBind(checkStroke, "Color", "AccentSoft")
  
 				local checkIcon = Instance.new("ImageLabel")
 				checkIcon.Name = "Icon"
 				checkIcon.BackgroundTransparency = 1
 				checkIcon.Image = ResolveIcon("check")
-				checkIcon.ImageColor3 = BobloNEXT.Theme.Background
+				ThemeBind(checkIcon, "ImageColor3", "OnAccent")
 				checkIcon.ImageTransparency = isOptionSelected(optionName) and 0 or 1
 				checkIcon.Size = UDim2.fromOffset(10, 10)
 				checkIcon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -19789,7 +19893,7 @@ function Tab:AddDropdown(opts)
 				check.Name = "SingleCheck"
 				check.BackgroundTransparency = 1
 				check.Image = ResolveIcon("check")
-				check.ImageColor3 = BobloNEXT.Theme.Text
+				ThemeBind(check, "ImageColor3", "Accent")
 				check.Size = UDim2.fromOffset(14, 14)
 				check.AnchorPoint = Vector2.new(1, 0.5)
 				check.Position = UDim2.new(1, -10, 0.5, 0)
@@ -19900,18 +20004,19 @@ function Tab:AddTextbox(opts)
 	pill.AnchorPoint = Vector2.new(1, 0.5)
 	pill.Position = UDim2.new(1, -14, 0.5, 0)
 	pill.Size = UDim2.fromOffset(pillMinW, 26)
-	pill.BackgroundColor3 = Color3.new(1, 1, 1)
+	ThemeBind(pill, "BackgroundColor3", "SurfaceHigh")
 	pill.BackgroundTransparency = 0.9
 	pill.BorderSizePixel = 0
 	pill.ZIndex = Z.Content + 2
 	pill.Parent = card
 	Corner(pill, 8)
-	local pillStroke = Stroke(pill, Color3.new(1, 1, 1), 1, 0.88)
+	local pillStroke = Stroke(pill, BobloNEXT.Theme.Border, 1, 0.65)
+	ThemeBind(pillStroke, "Color", "Border")
  
 	local penIcon = Instance.new("ImageLabel")
 	penIcon.BackgroundTransparency = 1
 	penIcon.Image = ResolveIcon("pencil")
-	penIcon.ImageColor3 = BobloNEXT.Theme.TextDim
+	ThemeBind(penIcon, "ImageColor3", "TextDim")
 	penIcon.Size = UDim2.fromOffset(13, 13)
 	penIcon.AnchorPoint = Vector2.new(0, 0.5)
 	penIcon.Position = UDim2.new(0, 10, 0.5, 0)
@@ -19922,9 +20027,9 @@ function Tab:AddTextbox(opts)
 	box.ClearTextOnFocus = false
 	box.FontFace = BobloNEXT.Theme.FontRegular
 	box.PlaceholderText = opts.Placeholder or ""
-	box.PlaceholderColor3 = Color3.fromRGB(120, 120, 122)
+	ThemeBind(box, "PlaceholderColor3", "TextSoft")
 	box.Text = opts.Default or ""
-	box.TextColor3 = BobloNEXT.Theme.Text
+	ThemeBind(box, "TextColor3", "Text")
 	box.TextSize = 13
 	box.TextXAlignment = Enum.TextXAlignment.Left
 	box.TextYAlignment = Enum.TextYAlignment.Center
@@ -19977,7 +20082,7 @@ function Tab:AddTextbox(opts)
 	end
  
 	box.FocusLost:Connect(function(enterPressed)
-		Tween(pillStroke, { Color = Color3.new(1, 1, 1), Transparency = 0.88 }, 0.15)
+		Tween(pillStroke, { Color = BobloNEXT.Theme.Border, Transparency = 0.65 }, 0.15)
 		Tween(pill, { BackgroundTransparency = 0.9 }, 0.15)
 		fireChanged(box.Text, enterPressed)
 	end)
